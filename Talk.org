@@ -1,0 +1,172 @@
+#+TITLE: (Simile Free) Monad Recipes
+#+AUTHOR: Aditya Siram
+#+LaTeX_CLASS: beamer
+#+LaTeX_CLASS_OPTIONS: [presentation]
+#+BEAMER_HEADER_EXTRA: \usetheme{Madrid}\usecolortheme{default}
+#+BEAMER_FRAME_LEVEL: 2
+#+COLUMNS: %35ITEM %10BEAMER_env(Env) %10BEAMER_envargs(Env Args) %4BEAMER_col(Col) %8BEAMER_extra(Extra)
+* About ..
+** About this talk ...
+*** A stepping stone
+*** No monad innards
+*** Lots of "going with it" ...
+* IO
+** Brief IO Example
+*** This small function writes a text file, uppercases its contents & prints them..
+#+BEGIN_SRC haskell
+    import Data.Char
+    main :: IO ()
+    main = do
+        writeFile "test.txt" "a,b,c,d,e"
+        x <- readFile "test.txt"
+        let upCased = map toUpper x
+        y <- return upCased
+        print y
+    => "A,B,C,D,E"
+#+END_SRC
+** Brief IO Example
+*** With types added ...
+#+BEGIN_SRC haskell
+main :: IO ()
+main = do
+  writeFile "test.txt" "a,b,c,d,e" :: IO ()
+  x :: String <- readFile "test.txt" :: IO String
+  let upCased :: String = map toUpper x
+  y :: String <- return upCased :: IO String
+  print y :: IO ()
+#+END_SRC
+** Brief IO Example
+*** Querying a Sqlite database
+#+BEGIN_SRC haskell
+get_users :: IO [(String,String)]
+get_users = do
+  rows :: [[SqlValue]] <
+        dbQuery "select * from users" []
+  let marshalled =
+          map (\(user:pass:[]) ->
+                   (fromSql user, fromSql pass))
+              rows
+  return marshalled
+  where
+    dbQuery sql values = ...
+#+END_SRC
+** Brief IO Example
+*** The implementation of dbQuery isn't important, but here it is ...
+#+begin_src haskell
+      dbQuery :: String -> [SqlValue] -> IO [[SqlValue]]
+      dbQuery sql values =
+            bracket dbConnect disconnect
+              (\conn -> quickQuery' conn sql values)
+      dbConnect :: IO Connection
+      dbConnect = connectSqlite3 "test.sqlite"
+#+end_src
+** Reader
+*** In impure languages threading state is the norm
+#+BEGIN_SRC python
+func (state) {
+  var i = 0;
+  i = func1(state);
+  i = func2(state);
+  return (i,state);
+}
+#+END_SRC
+*** 'state' seen by 'func1' may be different from 'state' seen by 'func2'
+*** In Haskell, 'state' and 'i' are not mutable so output is the original 'i' and 'state' - not what you wanted!
+*** The three basic state manipulation monads Reader,Writer and State offer (the illusion of) mutable state in Haskell.
+** Reader (1/2)
+*** Reader = Read-only State + Result
+*** 'runReader' :: Reader Monad -> Read-Only State -> Result
+*** 'ask' extracts the state from the monad for inspection.
+** Reader (2/2)
+*** Authenticating users
+#+begin_src haskell
+simple_auth :: (String,String) ->
+               Reader [(String,String)] Bool
+simple_auth (user,pass) = do
+  users :: [(String,String)] <- ask
+  case (lookup user users) of
+    Nothing -> return False
+    Just p -> return (p == pass)
+
+main =
+    let my_auth = ("deech","deechpassword") in
+    do users :: [(String,String)] <- get_users
+       print (runReader (simple_auth my_auth) users)
+=> True
+#+end_src
+** Writer
+*** Writer = Append-Only State + Result
+*** 'runWriter' :: Writer Monad -> (Result, Accumulated State)
+*** State is accumulated using 'tell'
+** Writer
+*** Validating input
+#+begin_src haskell
+validate :: String -> Writer [String] ()
+validate input =
+    let hasNumbers = (>= 2) . length . filter isDigit
+        hasUppers  = (>= 1) . length . filter isUpper
+        noSpaces   = null . filter (== ' ')
+        check f input msg = if (not (f input))
+                            then tell [msg]
+                            else return ()
+    in do check hasNumbers input "Needs 2+ numbers"
+          check hasUppers  input "Needs 1+ capitals"
+          check noSpaces   input "Has spaces"
+#+end_src
+** Writer
+*** Running
+#+begin_src haskell
+main = do
+  let ((),errs) = runWriter (validate "abcde1")
+      valid     = null errs
+  if (not valid) then print errs else print "Valid!"
+=> ["Needs 2+ numbers","Needs 1+ capitals"]
+#+end_src
+** State
+*** State Monad = Mutable State + Result
+*** 'get', 'put' do what they sound like
+*** 'runState' :: State Monad -> Initial State -> (Result, New State)
+*** Initial State is *required*.
+** State
+*** Finding the minumum imperatively. Buggy!
+#+begin_src haskell
+minimum_bad :: [Int] -> ((), Int)
+minimum_bad [] = error "Empty List."
+minimum_bad xs =
+    runState (mapM_ compare xs :: State Int ()) (-1)
+    where
+      compare :: Int -> State Int ()
+      compare curr = do
+              old_min <- get
+              if (curr < old_min)
+              then put curr
+              else return ()
+minimum_bad [3,2,1] => ((),-1)
+#+end_src
+** State
+*** `trace` and `printf` are your friends
+#+begin_src haskell
+-- Debug.Trace.trace :: String -> a -> a
+println msg = trace msg (return ())
+#+end_src
+** State
+#+begin_src haskell
+minimum_bad xs = ...
+      compare curr = do
+              old_min <- get
+              println (printf "old_min: %d curr: %d"
+                               old_min curr)
+              ...
+minimum_bad [3,2,1] => ((), old_min: -1 curr: 3
+                            old_min: -1 curr: 2
+                            old_min: -1 curr: 1
+                            -1)
+#+end_src
+** State
+*** Fixed!
+#+begin_src haskell
+-- minimum_bad xs =
+--     runState (mapM_ compare xs) -1
+minimum (x:xs) =
+    runState (mapM_ compare xs) x
+#+end_src
