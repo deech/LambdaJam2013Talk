@@ -56,19 +56,6 @@ get_users = do
       dbConnect = connectSqlite3 "test.sqlite"
 #+end_src
 * Reader
-** Reader
-*** In impure languages threading state is the norm
-#+BEGIN_SRC python
-func (state) {
-  var i = 0;
-  i = func1(state);
-  i = func2(state);
-  return (i,state);
-}
-#+END_SRC
-*** 'state' seen by 'func1' may be different from 'state' seen by 'func2'
-*** In Haskell, 'state' and 'i' are not mutable so output is the original 'i' and 'state' - not what you wanted!
-*** The three basic state manipulation monads Reader,Writer and State offer (the illusion of) mutable state in Haskell.
 ** Reader (1/2)
 *** Reader = Read-only State + Result
 *** 'runReader' :: Reader Monad -> Read-Only State -> Result
@@ -169,7 +156,7 @@ minimum (x:xs) =
     runState (mapM_ compare xs) x
 #+end_src
 
-* Transformer
+* Monad Transformers
 ** Transformers
 *** Use all at once.
 *** The Good: Combining monads is easy.
@@ -320,7 +307,7 @@ interactive_auth_driver = do
 -- runRWST :: RWST Monad ->
               Read-Only State ->
               Mutable State ->
-              Bottom Monad
+              Lowest Monad
 interactive_auth_driver' = do
     let my_auth = ("deech","deechpassword")
     users <- get_users

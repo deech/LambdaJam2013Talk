@@ -5,7 +5,7 @@ import Control.Exception
 import "mtl" Control.Monad.Reader
 import "mtl" Control.Monad.Writer
 import "mtl" Control.Monad.State
-import "mtl" Control.Monad.RWS    
+import "mtl" Control.Monad.RWS
 import Data.Char
 import Debug.Trace
 
@@ -31,10 +31,6 @@ simple_auth (user,pass) = do
     Nothing -> return False
     Just p -> return (p == pass)
 
--- interactive_auth :: ReaderT [(String,String)]
---                             (WriterT [String]
---                                      (StateT String IO))
---                             ()
 interactive_auth = do
   let puts     msg = liftIO (putStrLn msg)
   let wait_for msg = do {puts msg; liftIO getLine}
