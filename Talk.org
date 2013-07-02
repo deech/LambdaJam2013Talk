@@ -5,24 +5,19 @@
 #+BEAMER_HEADER_EXTRA: \usetheme{Madrid}\usecolortheme{default}
 #+BEAMER_FRAME_LEVEL: 2
 #+COLUMNS: %35ITEM %10BEAMER_env(Env) %10BEAMER_envargs(Env Args) %4BEAMER_col(Col) %8BEAMER_extra(Extra)
-* About ..
-** About this talk ...
-*** A stepping stone
-*** No monad innards
-*** Lots of "going with it" ...
 * IO
 ** Brief IO Example
 *** This small function writes a text file, uppercases its contents & prints them..
 #+BEGIN_SRC haskell
-    import Data.Char
-    main :: IO ()
-    main = do
-        writeFile "test.txt" "a,b,c,d,e"
-        x <- readFile "test.txt"
-        let upCased = map toUpper x
-        y <- return upCased
-        print y
-    => "A,B,C,D,E"
+import Data.Char
+main :: IO ()
+main = do
+    writeFile "test.txt" "a,b,c,d,e"
+    x <- readFile "test.txt"
+    let up_cased = map toUpper x
+    y <- return up_cased
+    print y
+=> "A,B,C,D,E"
 #+END_SRC
 ** Brief IO Example
 *** With types added ...
@@ -60,6 +55,7 @@ get_users = do
       dbConnect :: IO Connection
       dbConnect = connectSqlite3 "test.sqlite"
 #+end_src
+* Reader
 ** Reader
 *** In impure languages threading state is the norm
 #+BEGIN_SRC python
@@ -94,6 +90,7 @@ main =
        print (runReader (simple_auth my_auth) users)
 => True
 #+end_src
+* Writer
 ** Writer
 *** Writer = Append-Only State + Result
 *** 'runWriter' :: Writer Monad -> (Result, Accumulated State)
@@ -122,13 +119,14 @@ main = do
   if (not valid) then print errs else print "Valid!"
 => ["Needs 2+ numbers","Needs 1+ capitals"]
 #+end_src
+* State
 ** State
 *** State Monad = Mutable State + Result
 *** 'get', 'put' do what they sound like
 *** 'runState' :: State Monad -> Initial State -> (Result, New State)
 *** Initial State is *required*.
 ** State
-*** Finding the minumum imperatively. Buggy!
+*** Finding the minimum imperatively. Buggy!
 #+begin_src haskell
 minimum_bad :: [Int] -> ((), Int)
 minimum_bad [] = error "Empty List."
@@ -169,4 +167,181 @@ minimum_bad [3,2,1] => ((), old_min: -1 curr: 3
 --     runState (mapM_ compare xs) -1
 minimum (x:xs) =
     runState (mapM_ compare xs) x
+#+end_src
+
+* Transformer
+** Transformers
+*** Use all at once.
+*** The Good: Combining monads is easy.
+*** The Bad: Type sigs. and runners are more complicated.
+*** The Sorta Good: It's pretty mechanical
+** Transformers
+*** An interactive version of auth
+#+begin_src haskell
+interactive_auth = do
+  let puts     msg = liftIO (putStrLn msg)
+  let wait_for msg = do {puts msg; liftIO getLine}
+  let log_failed   = do {puts "Invalid Login!";
+                         tell ["Failed login attempt"]}
+  let set_user u   = do {puts "Welcome!"; put u}
+  users    <- ask
+  user     <- wait_for "Username:"
+  password <- wait_for "Password:"
+  case (lookup user users) of
+    Nothing -> log_failed
+    Just p  -> if (p == password)
+               then set_user user
+               else log_failed
+#+end_src
+** Transformers
+#+begin_src haskell
+interactive_auth :: ReaderT [(String,String)]
+                            (WriterT [String]
+                                     (StateT String
+                                             IO))
+                            ()
+#+end_src
+*** Transformer = Stack of Monads + Result
+#+begin_src haskell
+interactive_auth = ... ()
+#+end_src
+** Transformers
+#+begin_src haskell
+interactive_auth :: ReaderT [(String,String)]
+                            (WriterT [String]
+                                     (StateT String
+                                             IO))
+                            ()
+#+end_src
+*** Outer monad is ReaderT
+#+begin_src haskell
+ReaderT [(String,String)] (WriterT ...) ()
+#+end_src
+*** Reader
+#+begin_src haskell
+simple_auth :: Reader [(String,String)] Bool
+#+end_src
+*** Reader Transformer = ReaderT + Environment + M
+#+begin_src haskell
+ReaderT [(String,String)] (WriterT ...) ()
+#+end_src
+** Transformers
+#+begin_src haskell
+interactive_auth :: ReaderT [(String,String)]
+                            (WriterT [String]
+                                     (StateT String
+                                             IO))
+                            ()
+#+end_src
+*** 'runReader' :: Reader Monad -> Read-Only State -> Result
+*** 'runReaderT' :: ReaderT Monad -> Read-Only State -> M Result
+#+begin_src haskell
+let writer :: WriterT [String] (StateT Int IO) () =
+   runReaderT interactive_auth users
+#+end_src
+** Transformers
+#+begin_src haskell
+interactive_auth :: ReaderT [(String,String)]
+                            (WriterT [String]
+                                     (StateT String
+                                             IO))
+                            ()
+#+end_src
+*** Writer = Writer + Append-Only State + (Result, Accumulated State)
+#+begin_src haskell
+validate :: String -> Writer [String] ()
+#+end_src
+*** WriterT Transformer = WriterT + Append-Only State + M
+#+begin_src haskell
+WriterT [String] (... )
+#+end_src
+** Transformers
+#+begin_src haskell
+interactive_auth :: ReaderT [(String,String)]
+                            (WriterT [String]
+                                     (StateT String
+                                             IO))
+                            ()
+#+end_src
+*** 'runWriter' :: Writer Monad -> (Result, Accumulated State)
+*** 'runWriterT' :: WriterT Monad -> Append-Only State -> M (Result, Accumulated State)
+#+begin_src haskell
+let writer = runReaderT interactive_auth users
+let state :: (StateT String IO) ((), [String])
+    = runWriterT writer
+#+end_src
+** Transformers
+#+begin_src haskell
+interactive_auth :: ReaderT [(String,String)]
+                            (WriterT [String]
+                                     (StateT String
+                                             IO))
+                            ()
+#+end_src
+*** State = Mutable State + Result
+#+begin_src haskell
+(mapM_ compare xs :: State Int ())
+#+end_src
+*** State Transformer = StateT + Mutable State + Underlying Monad
+#+begin_src haskell
+StateT String IO (...)
+#+end_src
+** Transformers
+#+begin_src haskell
+interactive_auth :: ReaderT [(String,String)]
+                            (WriterT [String]
+                                     (StateT String
+                                             IO))
+                            ()
+#+end_src
+*** 'runState' :: State Monad -> Initial State -> (Result, New State)
+*** 'runStateT' :: StateT Monad -> Mutable State -> M (Result, New State)
+#+begin_src haskell
+let writer = runReaderT interactive_auth users
+let state  = runWriterT writer
+let io :: IO (((), [String]), String) =
+   runStateT state ""
+#+end_src
+** Running
+*** Using `interactive\_auth`
+#+begin_src haskell
+interactive_auth_driver = do
+    let my_auth = ("deech","deechpassword")
+    users <- get_users
+    let writer = runReaderT interactive_auth users
+    let state  = runWriterT writer
+    let io     = runStateT  state ""
+    final <- io
+    print final
+#+end_src
+** Running    
+*** Running with Control.Monad.RWS
+#+begin_src haskell
+-- runRWST :: RWST Monad ->
+              Read-Only State ->
+              Mutable State ->
+              Bottom Monad
+interactive_auth_driver' = do
+    let my_auth = ("deech","deechpassword")
+    users <- get_users
+    final <- runRWST interactive_auth users ""
+    print final
+#+end_src
+** Running
+*** Sample session 1
+#+begin_src haskell
+Username:
+deech
+Password:
+wrongpassword
+(((),["Failed login attempt"]),"")
+#+end_src
+*** Sample session 2
+#+begin_src haskell
+Username:
+deech
+Password:
+deechpassword
+Welcome!
+(((),[]),"deech")
 #+end_src

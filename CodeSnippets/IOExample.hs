@@ -3,6 +3,6 @@ main :: IO ()
 main = do
   writeFile "test.txt" "a,b,c,d,e"
   x <- readFile "test.txt"
-  let upCased = map toUpper x
-  y <- return upCased 
+  let up_cased = map toUpper x
+  y <- return up_cased 
   print y
