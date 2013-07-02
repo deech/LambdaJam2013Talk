@@ -47,14 +47,14 @@ get_users = do
 #+END_SRC
 ** Brief IO Example
 *** The implementation of dbQuery isn't important, but here it is ...
-#+begin_src haskell
+#+BEGIN_SRC haskell
       dbQuery :: String -> [SqlValue] -> IO [[SqlValue]]
       dbQuery sql values =
             bracket dbConnect disconnect
               (\conn -> quickQuery' conn sql values)
       dbConnect :: IO Connection
       dbConnect = connectSqlite3 "test.sqlite"
-#+end_src
+#+END_SRC
 * Reader
 ** Reader (1/2)
 *** Reader = Read-only State + Result
@@ -62,7 +62,7 @@ get_users = do
 *** 'ask' extracts the state from the monad for inspection.
 ** Reader (2/2)
 *** Authenticating users
-#+begin_src haskell
+#+BEGIN_SRC haskell
 simple_auth :: (String,String) ->
                Reader [(String,String)] Bool
 simple_auth (user,pass) = do
@@ -76,7 +76,7 @@ main =
     do users :: [(String,String)] <- get_users
        print (runReader (simple_auth my_auth) users)
 => True
-#+end_src
+#+END_SRC
 * Writer
 ** Writer
 *** Writer = Append-Only State + Result
@@ -84,7 +84,7 @@ main =
 *** State is accumulated using 'tell'
 ** Writer
 *** Validating input
-#+begin_src haskell
+#+BEGIN_SRC haskell
 validate :: String -> Writer [String] ()
 validate input =
     let hasNumbers = (>= 2) . length . filter isDigit
@@ -96,16 +96,16 @@ validate input =
     in do check hasNumbers input "Needs 2+ numbers"
           check hasUppers  input "Needs 1+ capitals"
           check noSpaces   input "Has spaces"
-#+end_src
+#+END_SRC
 ** Writer
 *** Running
-#+begin_src haskell
+#+BEGIN_SRC haskell
 main = do
   let ((),errs) = runWriter (validate "abcde1")
       valid     = null errs
   if (not valid) then print errs else print "Valid!"
 => ["Needs 2+ numbers","Needs 1+ capitals"]
-#+end_src
+#+END_SRC
 * State
 ** State
 *** State Monad = Mutable State + Result
@@ -114,7 +114,7 @@ main = do
 *** Initial State is *required*.
 ** State
 *** Finding the minimum imperatively. Buggy!
-#+begin_src haskell
+#+BEGIN_SRC haskell
 minimum_bad :: [Int] -> ((), Int)
 minimum_bad [] = error "Empty List."
 minimum_bad xs =
@@ -127,15 +127,15 @@ minimum_bad xs =
               then put curr
               else return ()
 minimum_bad [3,2,1] => ((),-1)
-#+end_src
+#+END_SRC
 ** State
 *** `trace` and `printf` are your friends
-#+begin_src haskell
+#+BEGIN_SRC haskell
 -- Debug.Trace.trace :: String -> a -> a
 println msg = trace msg (return ())
-#+end_src
+#+END_SRC
 ** State
-#+begin_src haskell
+#+BEGIN_SRC haskell
 minimum_bad xs = ...
       compare curr = do
               old_min <- get
@@ -146,15 +146,15 @@ minimum_bad [3,2,1] => ((), old_min: -1 curr: 3
                             old_min: -1 curr: 2
                             old_min: -1 curr: 1
                             -1)
-#+end_src
+#+END_SRC
 ** State
 *** Fixed!
-#+begin_src haskell
+#+BEGIN_SRC haskell
 -- minimum_bad xs =
 --     runState (mapM_ compare xs) -1
 minimum (x:xs) =
     runState (mapM_ compare xs) x
-#+end_src
+#+END_SRC
 
 * Monad Transformers
 ** Transformers
@@ -164,7 +164,7 @@ minimum (x:xs) =
 *** The Sorta Good: It's pretty mechanical
 ** Transformers
 *** An interactive version of auth
-#+begin_src haskell
+#+BEGIN_SRC haskell
 interactive_auth = do
   let puts     msg = liftIO (putStrLn msg)
   let wait_for msg = do {puts msg; liftIO getLine}
@@ -179,119 +179,119 @@ interactive_auth = do
     Just p  -> if (p == password)
                then set_user user
                else log_failed
-#+end_src
+#+END_SRC
 ** Transformers
-#+begin_src haskell
+#+BEGIN_SRC haskell
 interactive_auth :: ReaderT [(String,String)]
                             (WriterT [String]
                                      (StateT String
                                              IO))
                             ()
-#+end_src
+#+END_SRC
 *** Transformer = Stack of Monads + Result
-#+begin_src haskell
+#+BEGIN_SRC haskell
 interactive_auth = ... ()
-#+end_src
+#+END_SRC
 ** Transformers
-#+begin_src haskell
+#+BEGIN_SRC haskell
 interactive_auth :: ReaderT [(String,String)]
                             (WriterT [String]
                                      (StateT String
                                              IO))
                             ()
-#+end_src
+#+END_SRC
 *** Outer monad is ReaderT
-#+begin_src haskell
+#+BEGIN_SRC haskell
 ReaderT [(String,String)] (WriterT ...) ()
-#+end_src
+#+END_SRC
 *** Reader
-#+begin_src haskell
+#+BEGIN_SRC haskell
 simple_auth :: Reader [(String,String)] Bool
-#+end_src
+#+END_SRC
 *** Reader Transformer = ReaderT + Environment + M
-#+begin_src haskell
+#+BEGIN_SRC haskell
 ReaderT [(String,String)] (WriterT ...) ()
-#+end_src
+#+END_SRC
 ** Transformers
-#+begin_src haskell
+#+BEGIN_SRC haskell
 interactive_auth :: ReaderT [(String,String)]
                             (WriterT [String]
                                      (StateT String
                                              IO))
                             ()
-#+end_src
+#+END_SRC
 *** 'runReader' :: Reader Monad -> Read-Only State -> Result
 *** 'runReaderT' :: ReaderT Monad -> Read-Only State -> M Result
-#+begin_src haskell
+#+BEGIN_SRC haskell
 let writer :: WriterT [String] (StateT Int IO) () =
    runReaderT interactive_auth users
-#+end_src
+#+END_SRC
 ** Transformers
-#+begin_src haskell
+#+BEGIN_SRC haskell
 interactive_auth :: ReaderT [(String,String)]
                             (WriterT [String]
                                      (StateT String
                                              IO))
                             ()
-#+end_src
+#+END_SRC
 *** Writer = Writer + Append-Only State + (Result, Accumulated State)
-#+begin_src haskell
+#+BEGIN_SRC haskell
 validate :: String -> Writer [String] ()
-#+end_src
+#+END_SRC
 *** WriterT Transformer = WriterT + Append-Only State + M
-#+begin_src haskell
+#+BEGIN_SRC haskell
 WriterT [String] (... )
-#+end_src
+#+END_SRC
 ** Transformers
-#+begin_src haskell
+#+BEGIN_SRC haskell
 interactive_auth :: ReaderT [(String,String)]
                             (WriterT [String]
                                      (StateT String
                                              IO))
                             ()
-#+end_src
+#+END_SRC
 *** 'runWriter' :: Writer Monad -> (Result, Accumulated State)
 *** 'runWriterT' :: WriterT Monad -> Append-Only State -> M (Result, Accumulated State)
-#+begin_src haskell
+#+BEGIN_SRC haskell
 let writer = runReaderT interactive_auth users
 let state :: (StateT String IO) ((), [String])
     = runWriterT writer
-#+end_src
+#+END_SRC
 ** Transformers
-#+begin_src haskell
+#+BEGIN_SRC haskell
 interactive_auth :: ReaderT [(String,String)]
                             (WriterT [String]
                                      (StateT String
                                              IO))
                             ()
-#+end_src
+#+END_SRC
 *** State = Mutable State + Result
-#+begin_src haskell
+#+BEGIN_SRC haskell
 (mapM_ compare xs :: State Int ())
-#+end_src
+#+END_SRC
 *** State Transformer = StateT + Mutable State + Underlying Monad
-#+begin_src haskell
+#+BEGIN_SRC haskell
 StateT String IO (...)
-#+end_src
+#+END_SRC
 ** Transformers
-#+begin_src haskell
+#+BEGIN_SRC haskell
 interactive_auth :: ReaderT [(String,String)]
                             (WriterT [String]
                                      (StateT String
                                              IO))
                             ()
-#+end_src
+#+END_SRC
 *** 'runState' :: State Monad -> Initial State -> (Result, New State)
 *** 'runStateT' :: StateT Monad -> Mutable State -> M (Result, New State)
-#+begin_src haskell
+#+BEGIN_SRC haskell
 let writer = runReaderT interactive_auth users
 let state  = runWriterT writer
 let io :: IO (((), [String]), String) =
    runStateT state ""
-#+end_src
+#+END_SRC
 ** Running
 *** Using `interactive\_auth`
-#+begin_src haskell
+#+BEGIN_SRC haskell
 interactive_auth_driver = do
     let my_auth = ("deech","deechpassword")
     users <- get_users
@@ -300,10 +300,10 @@ interactive_auth_driver = do
     let io     = runStateT  state ""
     final <- io
     print final
-#+end_src
+#+END_SRC
 ** Running    
 *** Running with Control.Monad.RWS
-#+begin_src haskell
+#+BEGIN_SRC haskell
 -- runRWST :: RWST Monad ->
               Read-Only State ->
               Mutable State ->
@@ -313,22 +313,22 @@ interactive_auth_driver' = do
     users <- get_users
     final <- runRWST interactive_auth users ""
     print final
-#+end_src
+#+END_SRC
 ** Running
 *** Sample session 1
-#+begin_src haskell
+#+BEGIN_SRC haskell
 Username:
 deech
 Password:
 wrongpassword
 (((),["Failed login attempt"]),"")
-#+end_src
+#+END_SRC
 *** Sample session 2
-#+begin_src haskell
+#+BEGIN_SRC haskell
 Username:
 deech
 Password:
 deechpassword
 Welcome!
 (((),[]),"deech")
-#+end_src
+#+END_SRC
