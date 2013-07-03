@@ -21,4 +21,4 @@ This talk is aimed at those who:
 
 2. have seen simple examples of Haskell's IO monad and do-notation and,
 
-3. would like to know how Haskell can be used to emulate those imperative idioms they are already familiar with.
+3. would like to know how to the imperative idioms they already know well to write Haskell.
