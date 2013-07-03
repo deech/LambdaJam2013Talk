@@ -17,7 +17,7 @@ Target Audience:
 
 This talk is aimed at those who:
 
-1. have been exposed to little functional programming via JavaScript/Python/Ruby/etc,
+1. have been exposed to functional programming via JavaScript/Python/Ruby/etc,
 
 2. have seen simple examples of Haskell's IO monad and do-notation and,
 
