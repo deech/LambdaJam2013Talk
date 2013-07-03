@@ -22,6 +22,7 @@ main = do
 ** Brief IO Example
 *** With types added ...
 #+BEGIN_SRC haskell
+{-# LANGUAGE ScopedTypeVariables #-}
 main :: IO ()
 main = do
   writeFile "test.txt" "a,b,c,d,e" :: IO ()
@@ -35,9 +36,10 @@ main = do
 #+BEGIN_SRC haskell
 get_users :: IO [(String,String)]
 get_users = do
-  rows :: [[SqlValue]] <
-        dbQuery "select * from users" []
-  let marshalled =
+  rows :: [[SqlValue]] <- dbQuery
+                            "select * from users"
+                            []
+  let marshalled :: [(String,String)] =
           map (\(user:pass:[]) ->
                    (fromSql user, fromSql pass))
               rows
@@ -90,12 +92,12 @@ validate input =
     let hasNumbers = (>= 2) . length . filter isDigit
         hasUppers  = (>= 1) . length . filter isUpper
         noSpaces   = null . filter (== ' ')
-        check f input msg = if (not (f input))
-                            then tell [msg]
-                            else return ()
-    in do check hasNumbers input "Needs 2+ numbers"
-          check hasUppers  input "Needs 1+ capitals"
-          check noSpaces   input "Has spaces"
+        check f msg = if (not (f input))
+                      then tell [msg]
+                      else return ()
+    in do check hasNumbers "Needs 2+ numbers"
+          check hasUppers  "Needs 1+ capitals"
+          check noSpaces   "Has spaces"
 #+END_SRC
 ** Writer
 *** Running
@@ -165,20 +167,20 @@ minimum (x:xs) =
 ** Transformers
 *** An interactive version of auth
 #+BEGIN_SRC haskell
-interactive_auth = do
+interactive_auth =
   let puts     msg = liftIO (putStrLn msg)
-  let wait_for msg = do {puts msg; liftIO getLine}
-  let log_failed   = do {puts "Invalid Login!";
-                         tell ["Failed login attempt"]}
-  let set_user u   = do {puts "Welcome!"; put u}
-  users    <- ask
-  user     <- wait_for "Username:"
-  password <- wait_for "Password:"
-  case (lookup user users) of
-    Nothing -> log_failed
-    Just p  -> if (p == password)
-               then set_user user
-               else log_failed
+      wait_for msg = do {puts msg; liftIO getLine}
+      log_failed   = tell ["Failed login attempt"]
+      set_user u   = do {puts "Welcome!"; put u}
+  in do users    <- ask
+        user     <- wait_for "Username:"
+        password <- wait_for "Password:"
+        case (lookup user users) of
+          Nothing -> do puts "Invalid Login!"
+                        log_failed
+          Just p  -> if (p == password)
+                     then set_user user
+                     else log_failed
 #+END_SRC
 ** Transformers
 #+BEGIN_SRC haskell
@@ -251,7 +253,7 @@ interactive_auth :: ReaderT [(String,String)]
                             ()
 #+END_SRC
 *** 'runWriter' :: Writer Monad -> (Result, Accumulated State)
-*** 'runWriterT' :: WriterT Monad -> Append-Only State -> M (Result, Accumulated State)
+*** 'runWriterT' :: WriterT Monad -> M (Result, Accumulated State)
 #+BEGIN_SRC haskell
 let writer = runReaderT interactive_auth users
 let state :: (StateT String IO) ((), [String])
@@ -301,7 +303,7 @@ interactive_auth_driver = do
     final <- io
     print final
 #+END_SRC
-** Running    
+** Running
 *** Running with Control.Monad.RWS
 #+BEGIN_SRC haskell
 -- runRWST :: RWST Monad ->
@@ -332,3 +334,45 @@ deechpassword
 Welcome!
 (((),[]),"deech")
 #+END_SRC
+** Transformers
+*** Multiple States, Readers, Writers?
+*** An `interactive\_auth` with an attempt counter
+#+begin_src haskell
+interactive_auth :: ReaderT [(String,String)]
+                      (WriterT [String]
+                          (StateT String
+                             (StateT Int
+                                 IO)))
+                      ()
+#+end_src
+*** Not recommended!
+** Transformers
+#+begin_src haskell
+interactive_auth :: ReaderT [(String,String)]
+                      (WriterT [String]
+                          (StateT String
+                             (StateT Int
+                                 IO)))
+                      ()
+#+end_src
+*** `lift` "removes" a monadic layer
+*** Accessing the counter:
+#+begin_src haskell
+do ...
+   counter <- lift -- ReaderT
+               (lift -- WriterT
+                (lift -- StateT String
+                 get))
+   ...
+#+end_src
+** Transformers
+*** Better off using a record:
+#+begin_src haskell
+data Auth_State = Auth_State {
+                               counter :: Int,
+                               current_user :: String
+                             }
+increment_attempt_counter = do
+  auth_state <- get
+  put auth_state{counter = (counter auth_state + 1)}
+#+end_src

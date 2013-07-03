@@ -10,7 +10,7 @@ get_users :: IO [(String,String)]
 get_users = do
   rows :: [[SqlValue]] <-
         dbQuery "select * from users" []
-  let marshalled =
+  let marshalled :: [(String,String)] =
           map (\(user:pass:[]) ->
                (fromSql user, fromSql pass))
               rows

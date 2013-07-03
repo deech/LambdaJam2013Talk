@@ -7,12 +7,12 @@ validate input =
     let hasNumbers = (>= 2) . length . filter isDigit
         hasUppers  = (>= 1) . length . filter isUpper
         noSpaces   = null . filter (== ' ')
-        check f input msg = if (not (f input))
-                            then tell [msg]
-                            else return ()
-    in do check hasNumbers input "Needs 2+ numbers"
-          check hasUppers  input "Needs 1+ capitals"
-          check noSpaces   input "Has spaces"
+        check f msg = if (not (f input))
+                      then tell [msg]
+                      else return ()
+    in do check hasNumbers "Needs 2+ numbers"
+          check hasUppers  "Needs 1+ capitals"
+          check noSpaces   "Has spaces"
 
 main = do
   let ((),errs) = runWriter (validate "abcde1")
