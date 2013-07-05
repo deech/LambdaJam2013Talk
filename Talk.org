@@ -32,6 +32,34 @@ main = do
   print y :: IO ()
 #+END_SRC
 ** Brief IO Example
+#+BEGIN_SRC haskell
+main = do
+  writeFile "test.txt" "a,b,c,d,e" :: IO ()
+  ...
+#+END_SRC
+** Brief IO Example
+#+BEGIN_SRC haskell
+main = do
+  ...
+  x :: String <- readFile "test.txt" :: IO String
+  let upCased :: String = map toUpper x
+  ...
+#+END_SRC
+** Brief IO Example
+#+BEGIN_SRC haskell
+main = do
+  let upCased = ...
+  y :: String <- return upCased :: IO String
+  ...
+#+END_SRC
+** Brief IO Example
+#+BEGIN_SRC haskell
+main :: IO ()
+main = do
+  y <- ...
+  print y :: IO ()
+#+END_SRC
+** Brief IO Example
 *** Querying a Sqlite database
 #+BEGIN_SRC haskell
 get_users :: IO [(String,String)]
@@ -46,6 +74,36 @@ get_users = do
   return marshalled
   where
     dbQuery sql values = ...
+#+END_SRC
+** Brief IO Example
+*** Querying a Sqlite database
+#+BEGIN_SRC haskell
+get_users = do
+  rows :: [[SqlValue]] <- dbQuery
+                            "select * from users"
+                            []
+  ...
+#+END_SRC
+** Brief IO Example
+*** Querying a Sqlite database
+#+BEGIN_SRC haskell
+get_users = do
+  rows <- ...
+  let marshalled :: [(String,String)] =
+          map (\(user:pass:[]) ->
+                   (fromSql user, fromSql pass))
+              rows
+  ...
+#+END_SRC
+** Brief IO Example
+*** Querying a Sqlite database
+#+BEGIN_SRC haskell
+get_users :: IO [(String,String)]
+get_users = do
+  ...
+  let marshalled = ...
+  return marshalled
+  where ...
 #+END_SRC
 ** Brief IO Example
 *** The implementation of dbQuery isn't important, but here it is ...
@@ -79,6 +137,47 @@ main =
        print (runReader (simple_auth my_auth) users)
 => True
 #+END_SRC
+** Reader (2/2)
+*** Authenticating users
+#+BEGIN_SRC haskell
+simple_auth :: (String,String) ->
+               Reader [(String,String)] Bool
+simple_auth (user,pass) = do ...
+main = ...
+#+END_SRC
+** Reader (2/2)
+*** Authenticating users
+#+BEGIN_SRC haskell
+simple_auth :: (String,String) ->
+               Reader [(String,String)] Bool
+simple_auth (user,pass) = do ...
+main =
+    let my_auth = ("deech","deechpassword") in
+    do users :: [(String,String)] <- get_users
+       print (runReader (simple_auth my_auth) users)
+#+END_SRC
+** Reader (2/2)
+*** Authenticating users
+#+BEGIN_SRC haskell
+simple_auth :: (String,String) ->
+               Reader [(String,String)] Bool
+simple_auth (user,pass) = do
+  users :: [(String,String)] <- ask
+  ...
+main = ...
+#+END_SRC
+** Reader (2/2)
+*** Authenticating users
+#+BEGIN_SRC haskell
+simple_auth :: (String,String) ->
+               Reader [(String,String)] Bool
+simple_auth (user,pass) = do
+  users <- ...
+  case (lookup user users) of
+    Nothing -> return False
+    Just p -> return (p == pass)
+main = ...
+#+END_SRC
 * Writer
 ** Writer
 *** Writer = Append-Only State + Result
@@ -95,6 +194,48 @@ validate input =
         check f msg = if (not (f input))
                       then tell [msg]
                       else return ()
+    in do check hasNumbers "Needs 2+ numbers"
+          check hasUppers  "Needs 1+ capitals"
+          check noSpaces   "Has spaces"
+#+END_SRC
+** Writer
+*** Validating input
+#+BEGIN_SRC haskell
+validate :: String -> Writer [String] ()
+validate input = ...
+#+END_SRC
+** Writer
+*** Validating input
+#+BEGIN_SRC haskell
+validate :: String -> Writer [String] ()
+validate input =
+    let hasNumbers = (>= 2) . length . filter isDigit
+        hasUppers  = (>= 1) . length . filter isUpper
+        noSpaces   = null . filter (== ' ')
+        ...
+#+END_SRC
+** Writer
+*** Validating input
+#+BEGIN_SRC haskell
+validate :: String -> Writer [String] ()
+validate input =
+    let hasNumbers = ...
+        hasUppers  = ... 
+        noSpaces   = ...
+        check f msg = if (not (f input))
+                      then tell [msg]
+                      else return ()
+    in do ...
+#+END_SRC
+** Writer
+*** Validating input
+#+BEGIN_SRC haskell
+validate :: String -> Writer [String] ()
+validate input =
+    let hasNumbers = ...
+        hasUppers  = ...
+        noSpaces   = ...
+        check f msg = ...
     in do check hasNumbers "Needs 2+ numbers"
           check hasUppers  "Needs 1+ capitals"
           check noSpaces   "Has spaces"
@@ -117,45 +258,91 @@ main = do
 ** State
 *** Finding the minimum imperatively. Buggy!
 #+BEGIN_SRC haskell
-minimum_bad :: [Int] -> ((), Int)
-minimum_bad [] = error "Empty List."
-minimum_bad xs =
-    runState (mapM_ compare xs :: State Int ()) (-1)
-    where
-      compare :: Int -> State Int ()
-      compare curr = do
-              old_min <- get
-              if (curr < old_min)
-              then put curr
-              else return ()
-minimum_bad [3,2,1] => ((),-1)
+minimum :: [Int] -> State Int ()
+minimum [] = error "Empty List."
+minimum xs =
+    forM_ xs (\curr -> do
+                old_min <- get
+                if (curr < old_min)
+                then put curr
+                else return ())
+main = let numbers = [3,2,1] in
+       print (runState (Main.minimum numbers) (-1))
+  => -1
+#+END_SRC
+** State
+*** Finding the minimum imperatively. Buggy!
+#+BEGIN_SRC haskell
+minimum :: [Int] -> State Int ()
+...
+main = ...
+#+END_SRC
+** State
+*** Finding the minimum imperatively. Buggy!
+#+BEGIN_SRC haskell
+minimum :: [Int] -> State Int ()
+minimum [] = error "Empty List."
+...
+main = ...
+#+END_SRC
+** State
+*** Finding the minimum imperatively. Buggy!
+#+BEGIN_SRC haskell
+minimum xs =
+    forM_ xs (\curr -> do
+                old_min <- get
+                ...) 
+#+END_SRC
+** State
+*** Finding the minimum imperatively. Buggy!
+#+BEGIN_SRC haskell
+minimum xs =
+    forM_ xs (\curr -> do
+                old_min <- ...
+                if (curr < old_min)
+                then put curr
+                else return ())
+#+END_SRC
+** State
+*** Finding the minimum imperatively. Buggy!
+#+BEGIN_SRC haskell
+minimum :: [Int] -> State Int ()
+minimum [] = ...
+minimum xs = ...
+main = let numbers = [3,2,1] in
+       print (runState (Main.minimum numbers) (-1))
+  => -1
 #+END_SRC
 ** State
 *** `trace` and `printf` are your friends
 #+BEGIN_SRC haskell
--- Debug.Trace.trace :: String -> a -> a
+import Debug.Trace
+import Text.Printf
+-- trace :: String -> a -> a
 println msg = trace msg (return ())
+printf_test = printf "Welcome to %s %d" "LambdaJam" 2013
+   => "Welcome to LambdaJam 2013"
 #+END_SRC
 ** State
 #+BEGIN_SRC haskell
-minimum_bad xs = ...
-      compare curr = do
-              old_min <- get
-              println (printf "old_min: %d curr: %d"
-                               old_min curr)
-              ...
-minimum_bad [3,2,1] => ((), old_min: -1 curr: 3
-                            old_min: -1 curr: 2
-                            old_min: -1 curr: 1
-                            -1)
+minimum xs = ...
+    forM_ xs (\curr -> do
+                old_min <- get
+                println (printf "old_min: %d curr: %d"
+                                 old_min curr)
+                ...)
+  => ((), old_min: -1 curr: 3
+          old_min: -1 curr: 2
+          old_min: -1 curr: 1
+          -1)
 #+END_SRC
 ** State
 *** Fixed!
 #+BEGIN_SRC haskell
--- minimum_bad xs =
---     runState (mapM_ compare xs) -1
-minimum (x:xs) =
-    runState (mapM_ compare xs) x
+-- main = let numbers = [3,2,1] in
+--        print (runState (Main.minimum numbers) (-1))
+main = let (n:ns) = [3,2,1] in
+       print (runState (Main.minimum ns) n)
 #+END_SRC
 
 * Monad Transformers
