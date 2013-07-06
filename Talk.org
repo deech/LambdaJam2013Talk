@@ -220,7 +220,7 @@ validate input =
 validate :: String -> Writer [String] ()
 validate input =
     let hasNumbers = ...
-        hasUppers  = ... 
+        hasUppers  = ...
         noSpaces   = ...
         check f msg = if (not (f input))
                       then tell [msg]
@@ -291,7 +291,7 @@ main = ...
 minimum xs =
     forM_ xs (\curr -> do
                 old_min <- get
-                ...) 
+                ...)
 #+END_SRC
 ** State
 *** Finding the minimum imperatively. Buggy!
@@ -370,16 +370,86 @@ interactive_auth =
                      else log_failed
 #+END_SRC
 ** Transformers
+*** An interactive version of auth
 #+BEGIN_SRC haskell
-interactive_auth :: ReaderT [(String,String)]
-                            (WriterT [String]
-                                     (StateT String
-                                             IO))
-                            ()
+interactive_auth =
+  let puts     msg = liftIO (putStrLn msg)
+      wait_for msg = ...
+      log_failed   = ...
+      set_user u   = ...
+  in do ...
 #+END_SRC
-*** Transformer = Stack of Monads + Result
+** Transformers
+*** An interactive version of auth
 #+BEGIN_SRC haskell
-interactive_auth = ... ()
+interactive_auth =
+  let puts     msg = liftIO (putStrLn msg)
+      wait_for msg = do {puts msg; liftIO getLine}
+      log_failed   =
+      set_user u   =
+  in do ...
+#+END_SRC
+** Transformers
+*** An interactive version of auth
+#+BEGIN_SRC haskell
+interactive_auth =
+  let puts     msg = ...
+      wait_for msg = ...
+      log_failed   = tell ["Failed login attempt"]
+      set_user u   = ...
+  in do ...
+#+END_SRC
+** Transformers
+*** An interactive version of auth
+#+BEGIN_SRC haskell
+interactive_auth =
+  let puts     msg = liftIO (putStrLn msg)
+      wait_for msg = ...
+      log_failed   = ...
+      set_user u   = do {puts "Welcome!"; put u}
+  in do ...
+#+END_SRC
+** Transformers
+*** An interactive version of auth
+#+BEGIN_SRC haskell
+interactive_auth =
+  let puts     msg = ...
+      wait_for msg = ...
+      log_failed   = ...
+      set_user u   = ...
+  in do users    <- ask
+        ...
+#+END_SRC
+** Transformers
+*** An interactive version of auth
+#+BEGIN_SRC haskell
+interactive_auth =
+  let puts     msg = ...
+      wait_for msg = do {puts msg; liftIO getLine}
+      log_failed   = ...
+      set_user u   = ...
+  in do users    <-  ...
+        user     <- wait_for "Username:"
+        password <- wait_for "Password:"
+        ...
+#+END_SRC
+** Transformers
+*** An interactive version of auth
+#+BEGIN_SRC haskell
+interactive_auth =
+  let puts     msg = liftIO (putStrLn msg)
+      wait_for msg = ...
+      log_failed   = tell ["Failed login attempt"]
+      set_user u   = do {puts "Welcome!"; put u}
+  in do users    <- ...
+        user     <- ...
+        password <- ...
+        case (lookup user users) of
+          Nothing -> do puts "Invalid Login!"
+                        log_failed
+          Just p  -> if (p == password)
+                     then set_user user
+                     else log_failed
 #+END_SRC
 ** Transformers
 #+BEGIN_SRC haskell
@@ -389,18 +459,7 @@ interactive_auth :: ReaderT [(String,String)]
                                              IO))
                             ()
 #+END_SRC
-*** Outer monad is ReaderT
-#+BEGIN_SRC haskell
-ReaderT [(String,String)] (WriterT ...) ()
-#+END_SRC
-*** Reader
-#+BEGIN_SRC haskell
-simple_auth :: Reader [(String,String)] Bool
-#+END_SRC
-*** Reader Transformer = ReaderT + Environment + M
-#+BEGIN_SRC haskell
-ReaderT [(String,String)] (WriterT ...) ()
-#+END_SRC
+*** Transformer = Nested Monads
 ** Transformers
 #+BEGIN_SRC haskell
 interactive_auth :: ReaderT [(String,String)]
@@ -409,7 +468,7 @@ interactive_auth :: ReaderT [(String,String)]
                                              IO))
                             ()
 #+END_SRC
-*** 'runReader' :: Reader Monad -> Read-Only State -> Result
+*** Reader Transformer = ReaderT + Read-Only State + M + Result
 *** 'runReaderT' :: ReaderT Monad -> Read-Only State -> M Result
 #+BEGIN_SRC haskell
 let writer :: WriterT [String] (StateT Int IO) () =
@@ -423,23 +482,7 @@ interactive_auth :: ReaderT [(String,String)]
                                              IO))
                             ()
 #+END_SRC
-*** Writer = Writer + Append-Only State + (Result, Accumulated State)
-#+BEGIN_SRC haskell
-validate :: String -> Writer [String] ()
-#+END_SRC
-*** WriterT Transformer = WriterT + Append-Only State + M
-#+BEGIN_SRC haskell
-WriterT [String] (... )
-#+END_SRC
-** Transformers
-#+BEGIN_SRC haskell
-interactive_auth :: ReaderT [(String,String)]
-                            (WriterT [String]
-                                     (StateT String
-                                             IO))
-                            ()
-#+END_SRC
-*** 'runWriter' :: Writer Monad -> (Result, Accumulated State)
+*** WriterT Transformer = WriterT + Append-Only State + M + Result
 *** 'runWriterT' :: WriterT Monad -> M (Result, Accumulated State)
 #+BEGIN_SRC haskell
 let writer = runReaderT interactive_auth users
@@ -454,23 +497,7 @@ interactive_auth :: ReaderT [(String,String)]
                                              IO))
                             ()
 #+END_SRC
-*** State = Mutable State + Result
-#+BEGIN_SRC haskell
-(mapM_ compare xs :: State Int ())
-#+END_SRC
-*** State Transformer = StateT + Mutable State + Underlying Monad
-#+BEGIN_SRC haskell
-StateT String IO (...)
-#+END_SRC
-** Transformers
-#+BEGIN_SRC haskell
-interactive_auth :: ReaderT [(String,String)]
-                            (WriterT [String]
-                                     (StateT String
-                                             IO))
-                            ()
-#+END_SRC
-*** 'runState' :: State Monad -> Initial State -> (Result, New State)
+*** State Transformer = StateT + Mutable State + M + Result
 *** 'runStateT' :: StateT Monad -> Mutable State -> M (Result, New State)
 #+BEGIN_SRC haskell
 let writer = runReaderT interactive_auth users
