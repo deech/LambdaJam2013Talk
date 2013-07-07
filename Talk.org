@@ -460,6 +460,7 @@ interactive_auth :: ReaderT [(String,String)]
                             ()
 #+END_SRC
 *** Transformer = Nested Monads
+*** Monad Transformer = MonadT + Monad Params + M + Result    
 ** Transformers
 #+BEGIN_SRC haskell
 interactive_auth :: ReaderT [(String,String)]
