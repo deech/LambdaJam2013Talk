@@ -1,5 +1,5 @@
 #+TITLE: (Simile Free) Monad Recipes
-#+AUTHOR: Aditya Siram
+#+AUTHOR: Aditya Siram (@deech)
 #+LaTeX_CLASS: beamer
 #+LaTeX_CLASS_OPTIONS: [presentation]
 #+BEAMER_HEADER_EXTRA: \usetheme{Madrid}\usecolortheme{default}
@@ -20,7 +20,7 @@ main = do
 => "A,B,C,D,E"
 #+END_SRC
 ** Brief IO Example
-*** With types added ...
+*** With types added (don't forget the pragma) ...
 #+BEGIN_SRC haskell
 {-# LANGUAGE ScopedTypeVariables #-}
 main :: IO ()
@@ -460,7 +460,8 @@ interactive_auth :: ReaderT [(String,String)]
                             ()
 #+END_SRC
 *** Transformer = Nested Monads
-*** Monad Transformer = MonadT + Monad Params + M + Result    
+*** Monad Transformer = MonadT + Monad Params + M + Result
+*** 'runMonadT' :: MonadT -> Monad Params -> M (Computation Result)
 ** Transformers
 #+BEGIN_SRC haskell
 interactive_auth :: ReaderT [(String,String)]
@@ -472,7 +473,7 @@ interactive_auth :: ReaderT [(String,String)]
 *** Reader Transformer = ReaderT + Read-Only State + M + Result
 *** 'runReaderT' :: ReaderT Monad -> Read-Only State -> M Result
 #+BEGIN_SRC haskell
-let writer :: WriterT [String] (StateT Int IO) () =
+let writer :: WriterT [String] (StateT ...) () =
    runReaderT interactive_auth users
 #+END_SRC
 ** Transformers
@@ -487,7 +488,7 @@ interactive_auth :: ReaderT [(String,String)]
 *** 'runWriterT' :: WriterT Monad -> M (Result, Accumulated State)
 #+BEGIN_SRC haskell
 let writer = runReaderT interactive_auth users
-let state :: (StateT String IO) ((), [String])
+let state :: (StateT String ...) ((), [String])
     = runWriterT writer
 #+END_SRC
 ** Transformers
@@ -591,3 +592,11 @@ increment_attempt_counter = do
   auth_state <- get
   put auth_state{counter = (counter auth_state + 1)}
 #+end_src
+** End
+*** Real World Uses
+**** Yesod
+**** Snap
+**** Parsec
+**** XMonad
+**** Many more ...
+*** Happy Haskelling!
