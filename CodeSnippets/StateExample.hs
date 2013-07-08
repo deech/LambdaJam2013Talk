@@ -5,7 +5,7 @@ import Text.Printf
 
 println msg = trace msg (return ())
 minimum :: [Int] -> State Int ()
-minimum [] = error "Empty List."
+minimum [] = return ()
 minimum xs =
     forM_ xs (\curr -> do
                 old_min <- get

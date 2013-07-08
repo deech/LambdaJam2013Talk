@@ -259,7 +259,7 @@ main = do
 *** Finding the minimum imperatively. Buggy!
 #+BEGIN_SRC haskell
 minimum :: [Int] -> State Int ()
-minimum [] = error "Empty List."
+minimum [] = return ()
 minimum xs =
     forM_ xs (\curr -> do
                 old_min <- get
@@ -281,7 +281,7 @@ main = ...
 *** Finding the minimum imperatively. Buggy!
 #+BEGIN_SRC haskell
 minimum :: [Int] -> State Int ()
-minimum [] = error "Empty List."
+minimum [] = return ()
 ...
 main = ...
 #+END_SRC
