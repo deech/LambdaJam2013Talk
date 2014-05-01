@@ -1,602 +1,616 @@
 #+TITLE: (Simile Free) Monad Recipes
 #+AUTHOR: Aditya Siram (@deech)
-#+LaTeX_CLASS: beamer
-#+LaTeX_CLASS_OPTIONS: [presentation]
-#+BEAMER_HEADER_EXTRA: \usetheme{Madrid}\usecolortheme{default}
-#+BEAMER_FRAME_LEVEL: 2
-#+COLUMNS: %35ITEM %10BEAMER_env(Env) %10BEAMER_envargs(Env Args) %4BEAMER_col(Col) %8BEAMER_extra(Extra)
+#+OPTIONS: H:2 toc:t
+#+LATEX_CLASS: beamer
+#+LATEX_CLASS_OPTIONS: [presentation]
+#+BEAMER_THEME: Madrid
 * IO
 ** Brief IO Example
-*** This small function writes a text file, uppercases its contents & prints them..
-#+BEGIN_SRC haskell
-import Data.Char
-main :: IO ()
-main = do
-    writeFile "test.txt" "a,b,c,d,e"
-    x <- readFile "test.txt"
-    let up_cased = map toUpper x
-    y <- return up_cased
-    print y
-=> "A,B,C,D,E"
-#+END_SRC
+- This small function writes a text file, uppercases its contents & prints them..
+    #+BEGIN_SRC haskell
+    import Data.Char
+    main :: IO ()
+    main = do
+        writeFile "test.txt" "a,b,c,d,e"
+        x <- readFile "test.txt"
+        let up_cased = map toUpper x
+        y <- return up_cased
+        print y
+    => "A,B,C,D,E"
+    #+END_SRC
 ** Brief IO Example
-*** With types added (don't forget the pragma) ...
-#+BEGIN_SRC haskell
-{-# LANGUAGE ScopedTypeVariables #-}
-main :: IO ()
-main = do
-  writeFile "test.txt" "a,b,c,d,e" :: IO ()
-  x :: String <- readFile "test.txt" :: IO String
-  let upCased :: String = map toUpper x
-  y :: String <- return upCased :: IO String
-  print y :: IO ()
-#+END_SRC
+- With types added (don't forget the pragma) ...
+    #+BEGIN_SRC haskell
+    {-# LANGUAGE ScopedTypeVariables #-}
+    main :: IO ()
+    main = do
+      writeFile "test.txt" "a,b,c,d,e" :: IO ()
+      x :: String <- readFile "test.txt" :: IO String
+      let upCased :: String = map toUpper x
+      y :: String <- return upCased :: IO String
+      print y :: IO ()
+    #+END_SRC
 ** Brief IO Example
-#+BEGIN_SRC haskell
-main = do
-  writeFile "test.txt" "a,b,c,d,e" :: IO ()
-  ...
-#+END_SRC
+    #+BEGIN_SRC haskell
+    main = do
+      writeFile "test.txt" "a,b,c,d,e" :: IO ()
+      ...
+    #+END_SRC
 ** Brief IO Example
-#+BEGIN_SRC haskell
-main = do
-  ...
-  x :: String <- readFile "test.txt" :: IO String
-  let upCased :: String = map toUpper x
-  ...
-#+END_SRC
+    #+BEGIN_SRC haskell
+    main = do
+      ...
+      x :: String <- readFile "test.txt" :: IO String
+      let upCased :: String = map toUpper x
+      ...
+    #+END_SRC
 ** Brief IO Example
-#+BEGIN_SRC haskell
-main = do
-  let upCased = ...
-  y :: String <- return upCased :: IO String
-  ...
-#+END_SRC
+    #+BEGIN_SRC haskell
+    main = do
+      let upCased = ...
+      y :: String <- return upCased :: IO String
+      ...
+    #+END_SRC
 ** Brief IO Example
-#+BEGIN_SRC haskell
-main :: IO ()
-main = do
-  y <- ...
-  print y :: IO ()
-#+END_SRC
+    #+BEGIN_SRC haskell
+    main :: IO ()
+    main = do
+      y <- ...
+      print y :: IO ()
+    #+END_SRC
 ** Brief IO Example
-*** Querying a Sqlite database
-#+BEGIN_SRC haskell
-get_users :: IO [(String,String)]
-get_users = do
-  rows :: [[SqlValue]] <- dbQuery
-                            "select * from users"
-                            []
-  let marshalled :: [(String,String)] =
-          map (\(user:pass:[]) ->
-                   (fromSql user, fromSql pass))
-              rows
-  return marshalled
-  where
-    dbQuery sql values = ...
-#+END_SRC
+- Querying a Sqlite database
+    #+BEGIN_SRC haskell
+    get_users :: IO [(String,String)]
+    get_users = do
+      rows :: [[SqlValue]] <- dbQuery
+                                "select * from users"
+                                []
+      let marshalled :: [(String,String)] =
+              map (\(user:pass:[]) ->
+                       (fromSql user, fromSql pass))
+                  rows
+      return marshalled
+      where
+        dbQuery sql values = ...
+    #+END_SRC
 ** Brief IO Example
-*** Querying a Sqlite database
-#+BEGIN_SRC haskell
-get_users = do
-  rows :: [[SqlValue]] <- dbQuery
-                            "select * from users"
-                            []
-  ...
-#+END_SRC
+- Querying a Sqlite database
+      #+BEGIN_SRC haskell
+      get_users = do
+        rows :: [[SqlValue]] <- dbQuery
+                                  "select * from users"
+                                  []
+        ...
+      #+END_SRC
 ** Brief IO Example
-*** Querying a Sqlite database
-#+BEGIN_SRC haskell
-get_users = do
-  rows <- ...
-  let marshalled :: [(String,String)] =
-          map (\(user:pass:[]) ->
-                   (fromSql user, fromSql pass))
-              rows
-  ...
-#+END_SRC
+- Querying a Sqlite database
+      #+BEGIN_SRC haskell
+      get_users = do
+        rows <- ...
+        let marshalled :: [(String,String)] =
+                map (\(user:pass:[]) ->
+                         (fromSql user, fromSql pass))
+                    rows
+        ...
+      #+END_SRC
 ** Brief IO Example
-*** Querying a Sqlite database
-#+BEGIN_SRC haskell
-get_users :: IO [(String,String)]
-get_users = do
-  ...
-  let marshalled = ...
-  return marshalled
-  where ...
-#+END_SRC
+- Querying a Sqlite database
+      #+BEGIN_SRC haskell
+      get_users :: IO [(String,String)]
+      get_users = do
+        ...
+        let marshalled = ...
+        return marshalled
+        where ...
+      #+END_SRC
 ** Brief IO Example
-*** The implementation of dbQuery isn't important, but here it is ...
-#+BEGIN_SRC haskell
-      dbQuery :: String -> [SqlValue] -> IO [[SqlValue]]
-      dbQuery sql values =
-            bracket dbConnect disconnect
-              (\conn -> quickQuery' conn sql values)
-      dbConnect :: IO Connection
-      dbConnect = connectSqlite3 "test.sqlite"
-#+END_SRC
+- The implementation of dbQuery isn't important, but here it is ...
+      #+BEGIN_SRC haskell
+            dbQuery :: String -> [SqlValue] -> IO [[SqlValue]]
+            dbQuery sql values =
+                  bracket dbConnect disconnect
+                    (\conn -> quickQuery' conn sql values)
+            dbConnect :: IO Connection
+            dbConnect = connectSqlite3 "test.sqlite"
+      #+END_SRC
 * Reader
 ** Reader (1/2)
-*** Reader = Read-only State + Result
-*** 'runReader' :: Reader Monad -> Read-Only State -> Result
-*** 'ask' extracts the state from the monad for inspection.
+- Reader = Read-only State + Result
+  #+BEGIN_SRC haskell
+  runReader :: Reader Monad -> Read-Only State -> Result
+  #+END_SRC
+- 'ask' extracts the state from the monad for inspection.
 ** Reader (2/2)
-*** Authenticating users
-#+BEGIN_SRC haskell
-simple_auth :: (String,String) ->
-               Reader [(String,String)] Bool
-simple_auth (user,pass) = do
-  users :: [(String,String)] <- ask
-  case (lookup user users) of
-    Nothing -> return False
-    Just p -> return (p == pass)
+- Authenticating users
+    #+BEGIN_SRC haskell
+    simple_auth :: (String,String) ->
+                   Reader [(String,String)] Bool
+    simple_auth (user,pass) = do
+      users :: [(String,String)] <- ask
+      case (lookup user users) of
+        Nothing -> return False
+        Just p -> return (p == pass)
 
-main =
-    let my_auth = ("deech","deechpassword") in
-    do users :: [(String,String)] <- get_users
-       print (runReader (simple_auth my_auth) users)
-=> True
-#+END_SRC
+    main =
+        let my_auth = ("deech","deechpassword") in
+        do users :: [(String,String)] <- get_users
+           print (runReader (simple_auth my_auth) users)
+    => True
+    #+END_SRC
 ** Reader (2/2)
-*** Authenticating users
-#+BEGIN_SRC haskell
-simple_auth :: (String,String) ->
-               Reader [(String,String)] Bool
-simple_auth (user,pass) = do ...
-main = ...
-#+END_SRC
+- Authenticating users
+    #+BEGIN_SRC haskell
+    simple_auth :: (String,String) ->
+                   Reader [(String,String)] Bool
+    simple_auth (user,pass) = do ...
+    main = ...
+    #+END_SRC
 ** Reader (2/2)
-*** Authenticating users
-#+BEGIN_SRC haskell
-simple_auth :: (String,String) ->
-               Reader [(String,String)] Bool
-simple_auth (user,pass) = do ...
-main =
-    let my_auth = ("deech","deechpassword") in
-    do users :: [(String,String)] <- get_users
-       print (runReader (simple_auth my_auth) users)
-#+END_SRC
+- Authenticating users
+    #+BEGIN_SRC haskell
+    simple_auth :: (String,String) ->
+                   Reader [(String,String)] Bool
+    simple_auth (user,pass) = do ...
+    main =
+        let my_auth = ("deech","deechpassword") in
+        do users :: [(String,String)] <- get_users
+           print (runReader (simple_auth my_auth) users)
+    #+END_SRC
 ** Reader (2/2)
-*** Authenticating users
-#+BEGIN_SRC haskell
-simple_auth :: (String,String) ->
-               Reader [(String,String)] Bool
-simple_auth (user,pass) = do
-  users :: [(String,String)] <- ask
-  ...
-main = ...
-#+END_SRC
+- Authenticating users
+    #+BEGIN_SRC haskell
+    simple_auth :: (String,String) ->
+                   Reader [(String,String)] Bool
+    simple_auth (user,pass) = do
+      users :: [(String,String)] <- ask
+      ...
+    main = ...
+    #+END_SRC
 ** Reader (2/2)
-*** Authenticating users
-#+BEGIN_SRC haskell
-simple_auth :: (String,String) ->
-               Reader [(String,String)] Bool
-simple_auth (user,pass) = do
-  users <- ...
-  case (lookup user users) of
-    Nothing -> return False
-    Just p -> return (p == pass)
-main = ...
-#+END_SRC
+- Authenticating users
+    #+BEGIN_SRC haskell
+    simple_auth :: (String,String) ->
+                   Reader [(String,String)] Bool
+    simple_auth (user,pass) = do
+      users <- ...
+      case (lookup user users) of
+        Nothing -> return False
+        Just p -> return (p == pass)
+    main = ...
+    #+END_SRC
 * Writer
 ** Writer
-*** Writer = Append-Only State + Result
-*** 'runWriter' :: Writer Monad -> (Result, Accumulated State)
-*** State is accumulated using 'tell'
+- Writer = Append-Only State + Result
+  #+BEGIN_SRC haskell
+  runWriter::Writer Monad -> (Result, Accumulated State)
+  #+END_SRC
+- State is accumulated using 'tell'
 ** Writer
-*** Validating input
-#+BEGIN_SRC haskell
-validate :: String -> Writer [String] ()
-validate input =
-    let hasNumbers = (>= 2) . length . filter isDigit
-        hasUppers  = (>= 1) . length . filter isUpper
-        noSpaces   = null . filter (== ' ')
-        check f msg = if (not (f input))
-                      then tell [msg]
-                      else return ()
-    in do check hasNumbers "Needs 2+ numbers"
-          check hasUppers  "Needs 1+ capitals"
-          check noSpaces   "Has spaces"
-#+END_SRC
+- Validating input
+    #+BEGIN_SRC haskell
+    validate :: String -> Writer [String] ()
+    validate input =
+        let hasNumbers = (>= 2) . length . filter isDigit
+            hasUppers  = (>= 1) . length . filter isUpper
+            noSpaces   = null . filter (== ' ')
+            check f msg = if (not (f input))
+                          then tell [msg]
+                          else return ()
+        in do check hasNumbers "Needs 2+ numbers"
+              check hasUppers  "Needs 1+ capitals"
+              check noSpaces   "Has spaces"
+    #+END_SRC
 ** Writer
-*** Validating input
-#+BEGIN_SRC haskell
-validate :: String -> Writer [String] ()
-validate input = ...
-#+END_SRC
+- Validating input
+    #+BEGIN_SRC haskell
+    validate :: String -> Writer [String] ()
+    validate input = ...
+    #+END_SRC
 ** Writer
-*** Validating input
-#+BEGIN_SRC haskell
-validate :: String -> Writer [String] ()
-validate input =
-    let hasNumbers = (>= 2) . length . filter isDigit
-        hasUppers  = (>= 1) . length . filter isUpper
-        noSpaces   = null . filter (== ' ')
-        ...
-#+END_SRC
+- Validating input
+    #+BEGIN_SRC haskell
+    validate :: String -> Writer [String] ()
+    validate input =
+        let hasNumbers = (>= 2) . length . filter isDigit
+            hasUppers  = (>= 1) . length . filter isUpper
+            noSpaces   = null . filter (== ' ')
+            ...
+    #+END_SRC
 ** Writer
-*** Validating input
-#+BEGIN_SRC haskell
-validate :: String -> Writer [String] ()
-validate input =
-    let hasNumbers = ...
-        hasUppers  = ...
-        noSpaces   = ...
-        check f msg = if (not (f input))
-                      then tell [msg]
-                      else return ()
-    in do ...
-#+END_SRC
+- Validating input
+    #+BEGIN_SRC haskell
+    validate :: String -> Writer [String] ()
+    validate input =
+        let hasNumbers = ...
+            hasUppers  = ...
+            noSpaces   = ...
+            check f msg = if (not (f input))
+                          then tell [msg]
+                          else return ()
+        in do ...
+    #+END_SRC
 ** Writer
-*** Validating input
-#+BEGIN_SRC haskell
-validate :: String -> Writer [String] ()
-validate input =
-    let hasNumbers = ...
-        hasUppers  = ...
-        noSpaces   = ...
-        check f msg = ...
-    in do check hasNumbers "Needs 2+ numbers"
-          check hasUppers  "Needs 1+ capitals"
-          check noSpaces   "Has spaces"
-#+END_SRC
+- Validating input
+    #+BEGIN_SRC haskell
+    validate :: String -> Writer [String] ()
+    validate input =
+        let hasNumbers = ...
+            hasUppers  = ...
+            noSpaces   = ...
+            check f msg = ...
+        in do check hasNumbers "Needs 2+ numbers"
+              check hasUppers  "Needs 1+ capitals"
+              check noSpaces   "Has spaces"
+    #+END_SRC
 ** Writer
-*** Running
-#+BEGIN_SRC haskell
-main = do
-  let ((),errs) = runWriter (validate "abcde1")
-      valid     = null errs
-  if (not valid) then print errs else print "Valid!"
-=> ["Needs 2+ numbers","Needs 1+ capitals"]
-#+END_SRC
+- Running
+    #+BEGIN_SRC haskell
+    main = do
+      let ((),errs) = runWriter (validate "abcde1")
+          valid     = null errs
+      if (not valid) then print errs else print "Valid!"
+    => ["Needs 2+ numbers","Needs 1+ capitals"]
+    #+END_SRC
 * State
 ** State
-*** State Monad = Mutable State + Result
-*** 'get', 'put' do what they sound like
-*** 'runState' :: State Monad -> Initial State -> (Result, New State)
-*** Initial State is *required*.
+- State Monad = Mutable State + Result
+- 'get', 'put' do what they sound like
+  #+BEGIN_SRC haskell
+  runState :: State Monad -> Initial State ->
+              (Result, New State)
+  #+END_SRC
+- Initial State is *required*.
 ** State
-*** Finding the minimum imperatively. Buggy!
-#+BEGIN_SRC haskell
-minimum :: [Int] -> State Int ()
-minimum [] = return ()
-minimum xs =
-    forM_ xs (\curr -> do
-                old_min <- get
-                if (curr < old_min)
-                then put curr
-                else return ())
-main = let numbers = [3,2,1] in
-       print (runState (Main.minimum numbers) (-1))
-  => -1
-#+END_SRC
+- Finding the minimum imperatively. Buggy!
+    #+BEGIN_SRC haskell
+    minimum :: [Int] -> State Int ()
+    minimum [] = return ()
+    minimum xs =
+        forM_ xs (\curr -> do
+                    old_min <- get
+                    if (curr < old_min)
+                    then put curr
+                    else return ())
+    main = let numbers = [3,2,1] in
+           print (runState (Main.minimum numbers) (-1))
+      => -1
+    #+END_SRC
 ** State
-*** Finding the minimum imperatively. Buggy!
-#+BEGIN_SRC haskell
-minimum :: [Int] -> State Int ()
-...
-main = ...
-#+END_SRC
+- Finding the minimum imperatively. Buggy!
+    #+BEGIN_SRC haskell
+    minimum :: [Int] -> State Int ()
+    ...
+    main = ...
+    #+END_SRC
 ** State
-*** Finding the minimum imperatively. Buggy!
-#+BEGIN_SRC haskell
-minimum :: [Int] -> State Int ()
-minimum [] = return ()
-...
-main = ...
-#+END_SRC
+- Finding the minimum imperatively. Buggy!
+    #+BEGIN_SRC haskell
+    minimum :: [Int] -> State Int ()
+    minimum [] = return ()
+    ...
+    main = ...
+    #+END_SRC
 ** State
-*** Finding the minimum imperatively. Buggy!
-#+BEGIN_SRC haskell
-minimum xs =
-    forM_ xs (\curr -> do
-                old_min <- get
-                ...)
-#+END_SRC
+- Finding the minimum imperatively. Buggy!
+    #+BEGIN_SRC haskell
+    minimum xs =
+        forM_ xs (\curr -> do
+                    old_min <- get
+                    ...)
+    #+END_SRC
 ** State
-*** Finding the minimum imperatively. Buggy!
-#+BEGIN_SRC haskell
-minimum xs =
-    forM_ xs (\curr -> do
-                old_min <- ...
-                if (curr < old_min)
-                then put curr
-                else return ())
-#+END_SRC
+- Finding the minimum imperatively. Buggy!
+    #+BEGIN_SRC haskell
+    minimum xs =
+        forM_ xs (\curr -> do
+                    old_min <- ...
+                    if (curr < old_min)
+                    then put curr
+                    else return ())
+    #+END_SRC
 ** State
-*** Finding the minimum imperatively. Buggy!
-#+BEGIN_SRC haskell
-minimum :: [Int] -> State Int ()
-minimum [] = ...
-minimum xs = ...
-main = let numbers = [3,2,1] in
-       print (runState (Main.minimum numbers) (-1))
-  => -1
-#+END_SRC
+- Finding the minimum imperatively. Buggy!
+    #+BEGIN_SRC haskell
+    minimum :: [Int] -> State Int ()
+    minimum [] = ...
+    minimum xs = ...
+    main = let numbers = [3,2,1] in
+           print (runState (Main.minimum numbers) (-1))
+      => -1
+    #+END_SRC
 ** State
-*** `trace` and `printf` are your friends
-#+BEGIN_SRC haskell
-import Debug.Trace
-import Text.Printf
--- trace :: String -> a -> a
-println msg = trace msg (return ())
-printf_test = printf "Welcome to %s %d" "LambdaJam" 2013
-   => "Welcome to LambdaJam 2013"
-#+END_SRC
+- `trace` and `printf` are your friends
+    #+BEGIN_SRC haskell
+    import Debug.Trace
+    import Text.Printf
+    -- trace :: String -> a -> a
+    println msg = trace msg (return ())
+    printf_test = printf "Welcome to %s %d" "LambdaLounge" 0501
+       => "Welcome to LambdaLounge 0501"
+    #+END_SRC
 ** State
-#+BEGIN_SRC haskell
-minimum xs = ...
-    forM_ xs (\curr -> do
-                old_min <- get
-                println (printf "old_min: %d curr: %d"
-                                 old_min curr)
-                ...)
-  => ((), old_min: -1 curr: 3
-          old_min: -1 curr: 2
-          old_min: -1 curr: 1
-          -1)
-#+END_SRC
+    #+BEGIN_SRC haskell
+    minimum xs = ...
+        forM_ xs (\curr -> do
+                    old_min <- get
+                    println (printf "old_min: %d curr: %d"
+                                     old_min curr)
+                    ...)
+      => ((), old_min: -1 curr: 3
+              old_min: -1 curr: 2
+              old_min: -1 curr: 1
+              -1)
+    #+END_SRC
 ** State
-*** Fixed!
-#+BEGIN_SRC haskell
--- main = let numbers = [3,2,1] in
---        print (runState (Main.minimum numbers) (-1))
-main = let (n:ns) = [3,2,1] in
-       print (runState (Main.minimum ns) n)
-#+END_SRC
+- Fixed!
+    #+BEGIN_SRC haskell
+    -- main = let numbers = [3,2,1] in
+    --        print (runState (Main.minimum numbers) (-1))
+    main = let (n:ns) = [3,2,1] in
+           print (runState (Main.minimum ns) n)
+    #+END_SRC
 
 * Monad Transformers
 ** Transformers
-*** Use all at once.
-*** The Good: Combining monads is easy.
-*** The Bad: Type sigs. and runners are more complicated.
-*** The Sorta Good: It's pretty mechanical
+- Use all at once.
+- The Good: Combining monads is easy.
+- The Bad: Type sigs. and runners are more complicated.
+- The Sorta Good: It's pretty mechanical
 ** Transformers
-*** An interactive version of auth
+- An interactive version of auth
+    #+BEGIN_SRC haskell
+    interactive_auth =
+      let puts     msg = liftIO (putStrLn msg)
+          wait_for msg = do {puts msg; liftIO getLine}
+          log_failed   = tell ["Failed login attempt"]
+          set_user u   = do {puts "Welcome!"; put u}
+      in do users    <- ask
+            user     <- wait_for "Username:"
+            password <- wait_for "Password:"
+            case (lookup user users) of
+              Nothing -> do puts "Invalid Login!"
+                            log_failed
+              Just p  -> if (p == password)
+                         then set_user user
+                         else log_failed
+    #+END_SRC
+** Transformers
+- An interactive version of auth
+    #+BEGIN_SRC haskell
+    interactive_auth =
+      let puts     msg = liftIO (putStrLn msg)
+          wait_for msg = ...
+          log_failed   = ...
+          set_user u   = ...
+      in do ...
+    #+END_SRC
+** Transformers
+- An interactive version of auth
+    #+BEGIN_SRC haskell
+    interactive_auth =
+      let puts     msg = liftIO (putStrLn msg)
+          wait_for msg = do {puts msg; liftIO getLine}
+          log_failed   =
+          set_user u   =
+      in do ...
+    #+END_SRC
+** Transformers
+- An interactive version of auth
+    #+BEGIN_SRC haskell
+    interactive_auth =
+      let puts     msg = ...
+          wait_for msg = ...
+          log_failed   = tell ["Failed login attempt"]
+          set_user u   = ...
+      in do ...
+    #+END_SRC
+** Transformers
+- An interactive version of auth
+    #+BEGIN_SRC haskell
+    interactive_auth =
+      let puts     msg = liftIO (putStrLn msg)
+          wait_for msg = ...
+          log_failed   = ...
+          set_user u   = do {puts "Welcome!"; put u}
+      in do ...
+    #+END_SRC
+** Transformers
+- An interactive version of auth
+    #+BEGIN_SRC haskell
+    interactive_auth =
+      let puts     msg = ...
+          wait_for msg = ...
+          log_failed   = ...
+          set_user u   = ...
+      in do users    <- ask
+            ...
+    #+END_SRC
+** Transformers
+- An interactive version of auth
+    #+BEGIN_SRC haskell
+    interactive_auth =
+      let puts     msg = ...
+          wait_for msg = do {puts msg; liftIO getLine}
+          log_failed   = ...
+          set_user u   = ...
+      in do users    <-  ...
+            user     <- wait_for "Username:"
+            password <- wait_for "Password:"
+            ...
+    #+END_SRC
+** Transformers
+- An interactive version of auth
+    #+BEGIN_SRC haskell
+    interactive_auth =
+      let puts     msg = liftIO (putStrLn msg)
+          wait_for msg = ...
+          log_failed   = tell ["Failed login attempt"]
+          set_user u   = do {puts "Welcome!"; put u}
+      in do users    <- ...
+            user     <- ...
+            password <- ...
+            case (lookup user users) of
+              Nothing -> do puts "Invalid Login!"
+                            log_failed
+              Just p  -> if (p == password)
+                         then set_user user
+                         else log_failed
+    #+END_SRC
+** Transformers
+    #+BEGIN_SRC haskell
+    interactive_auth :: ReaderT [(String,String)]
+                                (WriterT [String]
+                                         (StateT String
+                                                 IO))
+                                ()
+    #+END_SRC
+- Transformer = Nested Monads
+- Monad Transformer = MonadT + Monad Params + M Result
 #+BEGIN_SRC haskell
-interactive_auth =
-  let puts     msg = liftIO (putStrLn msg)
-      wait_for msg = do {puts msg; liftIO getLine}
-      log_failed   = tell ["Failed login attempt"]
-      set_user u   = do {puts "Welcome!"; put u}
-  in do users    <- ask
-        user     <- wait_for "Username:"
-        password <- wait_for "Password:"
-        case (lookup user users) of
-          Nothing -> do puts "Invalid Login!"
-                        log_failed
-          Just p  -> if (p == password)
-                     then set_user user
-                     else log_failed
+runMonadT :: MonadT -> Monad Params ->
+             M (Computation Result)
 #+END_SRC
 ** Transformers
-*** An interactive version of auth
+    #+BEGIN_SRC haskell
+    interactive_auth :: ReaderT [(String,String)]
+                                (WriterT [String]
+                                         (StateT String
+                                                 IO))
+                                ()
+    #+END_SRC
+- Reader Transformer = ReaderT + Read-Only State + M Result
 #+BEGIN_SRC haskell
-interactive_auth =
-  let puts     msg = liftIO (putStrLn msg)
-      wait_for msg = ...
-      log_failed   = ...
-      set_user u   = ...
-  in do ...
-#+END_SRC
-** Transformers
-*** An interactive version of auth
-#+BEGIN_SRC haskell
-interactive_auth =
-  let puts     msg = liftIO (putStrLn msg)
-      wait_for msg = do {puts msg; liftIO getLine}
-      log_failed   =
-      set_user u   =
-  in do ...
-#+END_SRC
-** Transformers
-*** An interactive version of auth
-#+BEGIN_SRC haskell
-interactive_auth =
-  let puts     msg = ...
-      wait_for msg = ...
-      log_failed   = tell ["Failed login attempt"]
-      set_user u   = ...
-  in do ...
-#+END_SRC
-** Transformers
-*** An interactive version of auth
-#+BEGIN_SRC haskell
-interactive_auth =
-  let puts     msg = liftIO (putStrLn msg)
-      wait_for msg = ...
-      log_failed   = ...
-      set_user u   = do {puts "Welcome!"; put u}
-  in do ...
-#+END_SRC
-** Transformers
-*** An interactive version of auth
-#+BEGIN_SRC haskell
-interactive_auth =
-  let puts     msg = ...
-      wait_for msg = ...
-      log_failed   = ...
-      set_user u   = ...
-  in do users    <- ask
-        ...
-#+END_SRC
-** Transformers
-*** An interactive version of auth
-#+BEGIN_SRC haskell
-interactive_auth =
-  let puts     msg = ...
-      wait_for msg = do {puts msg; liftIO getLine}
-      log_failed   = ...
-      set_user u   = ...
-  in do users    <-  ...
-        user     <- wait_for "Username:"
-        password <- wait_for "Password:"
-        ...
-#+END_SRC
-** Transformers
-*** An interactive version of auth
-#+BEGIN_SRC haskell
-interactive_auth =
-  let puts     msg = liftIO (putStrLn msg)
-      wait_for msg = ...
-      log_failed   = tell ["Failed login attempt"]
-      set_user u   = do {puts "Welcome!"; put u}
-  in do users    <- ...
-        user     <- ...
-        password <- ...
-        case (lookup user users) of
-          Nothing -> do puts "Invalid Login!"
-                        log_failed
-          Just p  -> if (p == password)
-                     then set_user user
-                     else log_failed
-#+END_SRC
-** Transformers
-#+BEGIN_SRC haskell
-interactive_auth :: ReaderT [(String,String)]
-                            (WriterT [String]
-                                     (StateT String
-                                             IO))
-                            ()
-#+END_SRC
-*** Transformer = Nested Monads
-*** Monad Transformer = MonadT + Monad Params + M + Result
-*** 'runMonadT' :: MonadT -> Monad Params -> M (Computation Result)
-** Transformers
-#+BEGIN_SRC haskell
-interactive_auth :: ReaderT [(String,String)]
-                            (WriterT [String]
-                                     (StateT String
-                                             IO))
-                            ()
-#+END_SRC
-*** Reader Transformer = ReaderT + Read-Only State + M + Result
-*** 'runReaderT' :: ReaderT Monad -> Read-Only State -> M Result
-#+BEGIN_SRC haskell
+runReaderT :: ReaderT Monad -> Read-Only State ->
+              M Result
+...
 let writer :: WriterT [String] (StateT ...) () =
    runReaderT interactive_auth users
 #+END_SRC
 ** Transformers
+    #+BEGIN_SRC haskell
+    interactive_auth :: ReaderT [(String,String)]
+                                (WriterT [String]
+                                         (StateT String
+                                                 IO))
+                                ()
+    #+END_SRC
+- WriterT Transformer = WriterT + Append-Only State + M Result
 #+BEGIN_SRC haskell
-interactive_auth :: ReaderT [(String,String)]
-                            (WriterT [String]
-                                     (StateT String
-                                             IO))
-                            ()
-#+END_SRC
-*** WriterT Transformer = WriterT + Append-Only State + M + Result
-*** 'runWriterT' :: WriterT Monad -> M (Result, Accumulated State)
-#+BEGIN_SRC haskell
+runWriterT :: WriterT Monad ->
+              M (Result, Accumulated State)
 let writer = runReaderT interactive_auth users
 let state :: (StateT String ...) ((), [String])
     = runWriterT writer
 #+END_SRC
 ** Transformers
-#+BEGIN_SRC haskell
-interactive_auth :: ReaderT [(String,String)]
-                            (WriterT [String]
-                                     (StateT String
-                                             IO))
-                            ()
-#+END_SRC
-*** State Transformer = StateT + Mutable State + M + Result
-*** 'runStateT' :: StateT Monad -> Mutable State -> M (Result, New State)
-#+BEGIN_SRC haskell
-let writer = runReaderT interactive_auth users
-let state  = runWriterT writer
-let io :: IO (((), [String]), String) =
-   runStateT state ""
-#+END_SRC
+    #+BEGIN_SRC haskell
+    interactive_auth :: ReaderT [(String,String)]
+                                (WriterT [String]
+                                         (StateT String
+                                                 IO))
+                                ()
+    #+END_SRC
+- State Transformer = StateT + Mutable State + M Result
+  #+BEGIN_SRC haskell
+  runStateT :: StateT Monad -> Mutable State ->
+               M (Result, New State)
+  let writer = runReaderT interactive_auth users
+  let state  = runWriterT writer
+  let io :: IO (((), [String]), String) =
+     runStateT state ""
+  #+END_SRC
 ** Running
-*** Using `interactive\_auth`
-#+BEGIN_SRC haskell
-interactive_auth_driver = do
-    let my_auth = ("deech","deechpassword")
-    users <- get_users
-    let writer = runReaderT interactive_auth users
-    let state  = runWriterT writer
-    let io     = runStateT  state ""
-    final <- io
-    print final
-#+END_SRC
+- Using `interactive\textunderscore auth`
+    #+BEGIN_SRC haskell
+    interactive_auth_driver = do
+        let my_auth = ("deech","deechpassword")
+        users <- get_users
+        let writer = runReaderT interactive_auth users
+        let state  = runWriterT writer
+        let io     = runStateT  state ""
+        final <- io
+        print final
+    #+END_SRC
 ** Running
-*** Running with Control.Monad.RWS
-#+BEGIN_SRC haskell
--- runRWST :: RWST Monad ->
-              Read-Only State ->
-              Mutable State ->
-              Lowest Monad
-interactive_auth_driver' = do
-    let my_auth = ("deech","deechpassword")
-    users <- get_users
-    final <- runRWST interactive_auth users ""
-    print final
-#+END_SRC
+- Running with Control.Monad.RWS
+    #+BEGIN_SRC haskell
+    runRWST :: RWST Monad ->
+               Read-Only State ->
+               Mutable State ->
+               Lowest Monad
+    interactive_auth_driver' = do
+        let my_auth = ("deech","deechpassword")
+        users <- get_users
+        final <- runRWST interactive_auth users ""
+        print final
+    #+END_SRC
 ** Running
-*** Sample session 1
-#+BEGIN_SRC haskell
-Username:
-deech
-Password:
-wrongpassword
-(((),["Failed login attempt"]),"")
-#+END_SRC
-*** Sample session 2
-#+BEGIN_SRC haskell
-Username:
-deech
-Password:
-deechpassword
-Welcome!
-(((),[]),"deech")
-#+END_SRC
+- Sample session 1
+    #+BEGIN_SRC haskell
+    Username:
+    deech
+    Password:
+    wrongpassword
+    (((),["Failed login attempt"]),"")
+    #+END_SRC
+- Sample session 2
+    #+BEGIN_SRC haskell
+    Username:
+    deech
+    Password:
+    deechpassword
+    Welcome!
+    (((),[]),"deech")
+    #+END_SRC
 ** Transformers
-*** Multiple States, Readers, Writers?
-*** An `interactive\_auth` with an attempt counter
-#+begin_src haskell
-interactive_auth :: ReaderT [(String,String)]
-                      (WriterT [String]
-                          (StateT String
-                             (StateT Int
-                                 IO)))
-                      ()
-#+end_src
-*** Not recommended!
+- Multiple States, Readers, Writers?
+- An `interactive\textunderscore auth` with an attempt counter
+   #+begin_src haskell
+   interactive_auth :: ReaderT [(String,String)]
+                         (WriterT [String]
+                             (StateT String
+                                (StateT Int
+                                    IO)))
+                         ()
+   #+end_src
+- Not recommended!
 ** Transformers
-#+begin_src haskell
-interactive_auth :: ReaderT [(String,String)]
-                      (WriterT [String]
-                          (StateT String
-                             (StateT Int
-                                 IO)))
-                      ()
-#+end_src
-*** `lift` "removes" a monadic layer
-*** Accessing the counter:
-#+begin_src haskell
-do ...
-   counter <- lift -- ReaderT
-               (lift -- WriterT
-                (lift -- StateT String
-                 get))
-   ...
-#+end_src
+- Type ...
+  #+begin_src haskell
+  interactive_auth :: ReaderT [(String,String)]
+                        (WriterT [String]
+                            (StateT String
+                               (StateT Int
+                                   IO)))
+                        ()
+  #+end_src
+- `lift` "removes" a monadic layer
+- Accessing the counter:
+  #+begin_src haskell
+  do ...
+     counter <- lift -- ReaderT
+                 (lift -- WriterT
+                  (lift -- StateT String
+                   get))
+     ...
+  #+end_src
 ** Transformers
-*** Better off using a record:
-#+begin_src haskell
-data Auth_State = Auth_State {
-                               counter :: Int,
-                               current_user :: String
-                             }
-increment_attempt_counter = do
-  auth_state <- get
-  put auth_state{counter = (counter auth_state + 1)}
-#+end_src
+- Better off using a record:
+  #+begin_src haskell
+  data Auth_State = Auth_State {
+                                 counter :: Int,
+                                 current_user :: String
+                               }
+  increment_attempt_counter = do
+    auth_state <- get
+    put auth_state{counter = (counter auth_state + 1)}
+  #+end_src
 ** End
-*** Real World Uses
-**** Yesod
-**** Snap
-**** Parsec
-**** XMonad
-**** Many more ...
-*** Happy Haskelling!
+- Real World Uses
+ - Yesod
+ - Snap
+ - Parsec
+ - XMonad
+ - Many more ...
+- Happy Haskelling!
